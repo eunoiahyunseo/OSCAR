@@ -93,7 +93,7 @@
           <h1 class="title is-1 publication-title">🏆 OSCAR: <u>O</u>ptical-aware <u>S</u>emantic <u>C</u>ontrol for <u>A</u>leatoric <u>R</u>efinement in SAR-to-Optical Translation</h1>
           <div class="is-size-5 publication-authors">
             <span class="author-block">
-              <a href="#">Hyunseo Lee</a><sup>1</sup>,</span>
+              <a href="https://www.linkedin.com/in/%ED%98%84%EC%84%9C-%EC%9D%B4-8b0762362/">Hyunseo Lee</a><sup>1</sup>,</span>
             <span class="author-block">
               <a href="#">Sang Min Kim</a><sup>1</sup>,</span>
             <span class="author-block">
@@ -139,7 +139,7 @@
               </span>
               <!-- Code Link. -->
               <span class="link-block">
-                <a href="https://github.com/google/nerfies"
+                <a href="https://github.com/eunoiahyunseo/OSCAR-code"
                    class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
                       <i class="fab fa-github"></i>
@@ -821,54 +821,78 @@
 
 
 <section class="section">
-
   <div class="container is-max-desktop">
-    <!-- Abstract. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            Synthetic Aperture Radar (SAR) provides robust all-weather imaging capabilities; however, translating SAR observations into photo-realistic optical images remains a fundamentally ill-posed problem. Current approaches are often hindered by the inherent speckle noise and geometric distortions of SAR data, which frequently result in semantic misinterpretation, ambiguous texture synthesis, and structural hallucinations. To address these limitations, a novel SAR-to-Optical (S2O) translation framework is proposed, integrating three core technical contributions: (i) Cross-Modal Semantic Alignment, which establishes an Optical-Aware SAR Encoder by distilling robust semantic priors from an Optical Teacher into a SAR Student (ii) Semantically-Grounded Generative Guidance, realized by a Semantically-Grounded ControlNet that integrates class-aware text prompts for global context with hierarchical visual prompts for local spatial guidance; and (iii) an Uncertainty-Aware Objective, which explicitly models aleatoric uncertainty to dynamically modulate the reconstruction focus, effectively mitigating artifacts caused by speckle-induced ambiguity. Extensive experiments demonstrate that the proposed method achieves superior perceptual quality and semantic consistency compared to state-of-the-art approaches.
+            <b>Synthetic Aperture Radar (SAR)</b> provides robust all-weather imaging capabilities; however, translating SAR observations into photo-realistic <b>optical images</b> remains a fundamentally ill-posed problem. Current approaches are often hindered by the inherent <b>speckle noise</b> and geometric distortions of SAR data, which frequently result in semantic misinterpretation, ambiguous texture synthesis, and structural hallucinations.
+          </p>
+          <p>
+            To address these limitations, we propose <b>OSCAR</b> (Optical-aware Semantic Control for Aleatoric Refinement), a novel SAR-to-Optical (S2O) translation framework that integrates three core technical contributions:
+          </p>
+          <ol>
+            <li>
+              <b>Cross-Modal Semantic Alignment</b>: Establishes an <b>Optical-Aware SAR Encoder</b> by distilling robust semantic priors from an Optical Teacher into a SAR Student.
+            </li>
+            <li>
+              <b>Semantically-Grounded Generative Guidance</b>: Realized by a <b>ControlNet</b> that integrates class-aware text prompts for global context with hierarchical visual prompts for local spatial guidance.
+            </li>
+            <li>
+              <b>Uncertainty-Aware Objective</b>: Explicitly models <b>aleatoric uncertainty</b> to dynamically modulate the reconstruction focus, effectively mitigating artifacts caused by speckle-induced ambiguity.
+            </li>
+          </ol>
+          <p>
+            Extensive experiments demonstrate that <b>OSCAR</b> achieves superior perceptual quality and semantic consistency compared to state-of-the-art approaches.
           </p>
         </div>
       </div>
     </div>
-    <!--/ Abstract. -->
-  </div>
+    </div>
 </section>
-
-<!-- Overview Section -->
 <section class="section">
   <div class="container is-max-desktop">
     <h2 class="title is-3 has-text-centered">Overview</h2>
     
-    <!-- Distillation Architecture -->
     <div class="columns is-centered">
       <div class="column is-full-width">
-        <h3 class="title is-4">Optical-Aware SAR Encoder</h3>
+        <h3 class="title is-4">1. Optical-Aware SAR Encoder</h3>
         <div class="content has-text-centered">
-          <img src="./static/images/overview/distill_v3.png" alt="Optical-Aware SAR Encoder" style="max-width: 100%; height: auto;">
+          <img src="./static/images/overview/distill_v3.png" alt="Optical-Aware SAR Encoder" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
         </div>
         <div class="content has-text-justified">
           <p>
-            The Optical-Aware SAR Encoder overcomes the fundamental cross-modal semantic gap through a Cross-Modal Semantic Alignment strategy. Rather than training solely on radar signals, which lack spectral information, we utilize DINOv3-SAT—a large-scale vision foundation model pre-trained on 493 million satellite images—as the Optical Teacher network. The SAR Student network is trained via a multi-level distillation framework that synchronizes logit-level probabilities, intermediate feature representations (Attention maps and CLS tokens), and structural alignment to prevent feature collapse. By integrating Low-Rank Adaptation (LoRA) for parameter efficiency, the encoder learns to extract robust, modality-agnostic semantic priors from noisy SAR inputs, effectively aligning the SAR feature space with the rich semantic manifold of the optical domain.
+            The <b>Optical-Aware SAR Encoder</b> bridges the fundamental cross-modal gap by aligning SAR features with a rich optical semantic manifold.
           </p>
+          <ul>
+            <li><b>Cross-Modal Distillation</b>: We utilize <b>DINOv3-SAT</b>—a foundation model pre-trained on <b>493M satellite images</b>—as an <b>Optical Teacher</b> to guide the SAR Student.</li>
+            <li><b>Multi-level Alignment</b>: The framework synchronizes <b>logit-level probabilities</b>, <b>intermediate features</b> (Attention maps & CLS tokens), and <b>structural alignment</b> to capture robust, modality-agnostic priors.</li>
+            <li><b>Parameter Efficiency</b>: We integrate <b>Low-Rank Adaptation (LoRA)</b> to effectively adapt the large-scale encoder to the SAR domain without heavy computational overhead.</li>
+          </ul>
         </div>
       </div>
     </div>
     
-    <!-- Model Architecture -->
-    <div class="columns is-centered" style="margin-top: 2rem;">
+    <div class="columns is-centered" style="margin-top: 3rem;">
       <div class="column is-full-width">
-        <h3 class="title is-4">Semantically-Grounded ControlNet</h3>
+        <h3 class="title is-4">2. Semantically-Grounded ControlNet</h3>
         <div class="content has-text-centered">
-          <img src="./static/images/overview/model_archi_v5.png" alt="Semantically-Grounded ControlNet" style="max-width: 100%; height: auto;">
+          <img src="./static/images/overview/model_archi_v5.png" alt="Semantically-Grounded ControlNet" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
         </div>
         <div class="content has-text-justified">
           <p>
-            The Semantically-Grounded ControlNet performs precise SAR-to-Optical translation by injecting explicit semantic guidance through two complementary pathways. Class-aware Text Prompts, synthesized from the encoder’s high-confidence predictions, establish the global semantic context and domain style. Simultaneously, Hierarchical Visual Prompts are extracted from the aligned encoder and injected into the diffusion process via the Semantically-Grounded Guidance Module (SGGM) to ensure pixel-level structural fidelity. To mitigate hallucinations caused by the intrinsic ambiguity of SAR speckle noise, we implement an Uncertainty-Aware Objective. By estimating a pixel-wise confidence map, the model dynamically modulates the reconstruction loss—down-weighting penalties in high-uncertainty regions while encouraging sharp, accurate synthesis in confident areas.
+            The <b>Semantically-Grounded ControlNet</b> performs the translation by injecting dual-path semantic guidance into the diffusion process.
           </p>
+          <ul>
+            <li><b>Global & Local Guidance</b>: 
+              <ul>
+                <li><b>Class-aware Text Prompts</b>: Establish the global semantic tone and style based on high-confidence predictions.</li>
+                <li><b>Hierarchical Visual Prompts</b>: Provide dense spatial anchors via the <b>Semantically-Grounded Guidance Module (SGGM)</b> to ensure structural fidelity.</li>
+              </ul>
+            </li>
+            <li><b>Uncertainty-Aware Objective</b>: To handle the inherent noise in SAR, we explicitly model <b>aleatoric uncertainty</b>. By estimating a <b>pixel-wise confidence map</b>, the model learns to ignore speckle-induced ambiguity and focus on sharp, accurate reconstruction.</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -880,7 +904,6 @@
   <div class="container is-max-desktop">
     <h2 class="title is-3 has-text-centered">Experimental Results</h2>
     
-    <!-- Quantitative Results -->
     <div class="columns is-centered">
       <div class="column is-full-width">
         <h3 class="title is-4">Quantitative Results</h3>
@@ -889,28 +912,38 @@
         </div>
         <div class="content has-text-justified">
           <p>
-            Quantitative comparison with state-of-the-art SAR-to-optical translation methods on both BENv2 and SEN12MS datasets. Our OSCAR framework achieves superior performance across multiple metrics including FID (Fréchet Inception Distance), LPIPS (Learned Perceptual Image Patch Similarity), and semantic consistency scores, demonstrating the effectiveness of our optical-aware semantic control mechanism.
+            We conduct a quantitative comparison with state-of-the-art SAR-to-optical translation methods on both <b>BENv2</b> and <b>SEN12MS</b> datasets. Our <b>OSCAR framework</b> establishes a <b>new state-of-the-art</b> across all metric categories. 
           </p>
+          <ul>
+            <li><b>BigEarthNet-v2</b>: OSCAR reduces the <b>FID score by 32.5%</b> compared to BBDM.</li>
+            <li><b>SEN12MS</b>: OSCAR achieves an <b>FID reduction of over 50.2%</b> compared to StegoGAN.</li>
+          </ul>
         </div>
       </div>
     </div>
     
-    <!-- Ablation Study - Quantitative -->
     <div class="columns is-centered" style="margin-top: 2rem;">
       <div class="column is-full-width">
         <h3 class="title is-4">Ablation Study - Quantitative</h3>
         <div class="content has-text-centered">
-          <img src="./static/images/quantitative/ablation_Quantitative.png" alt="Ablation Study Quantitative" style="max-width: 100%; height: auto;">
+          <img src="./static/images/quantitative/ablation_quantitative.png" alt="Ablation Study Quantitative" style="max-width: 100%; height: auto;">
         </div>
         <div class="content has-text-justified">
           <p>
-            Ablation study results demonstrating the contribution of each component in our framework. We systematically evaluate the impact of the Optical-Aware SAR Encoder, Semantically-Grounded ControlNet, and Uncertainty-Aware Objective. Each component contributes to the overall performance improvement, validating our design choices.
+            We analyze the individual contributions of our three core technical pillars:
+          </p>
+          <ul>
+            <li><b>Cross-modal Alignment (Aln.)</b>: Essential for ensuring images follow the <b>spectral and semantic logic</b> of the optical domain.</li>
+            <li><b>Hierarchical Visual Prompts (Hier.)</b>: Provides dense <b>spatial guidance</b> to anchor textures correctly.</li>
+            <li><b>Class-aware Text Prompts (Text)</b>: Establishes the <b>global semantic tone</b> and domain context.</li>
+          </ul>
+          <p>
+            The integration of all components (<b>Full Model</b>) achieves the <b>highest quantitative performance</b> across DISTS, LPIPS, and SAM metrics, demonstrating a clear synergy between spatial and global guidance.
           </p>
         </div>
       </div>
     </div>
     
-    <!-- Ablation Study - Qualitative -->
     <div class="columns is-centered" style="margin-top: 2rem;">
       <div class="column is-full-width">
         <h3 class="title is-4">Ablation Study - Qualitative</h3>
@@ -919,14 +952,20 @@
         </div>
         <div class="content has-text-justified">
           <p>
-            Qualitative ablation results visualizing the effect of each component. The Optical-Aware SAR Encoder provides semantically aligned features, the Semantically-Grounded ControlNet ensures structural fidelity with semantic consistency, and the Uncertainty-Aware Objective reduces artifacts in ambiguous regions, collectively producing high-quality optical translations.
+            The qualitative results visualize how each component contributes to the final synthesis. As Cross-modal Alignment, Hierarchical Visual Prompts, and Class-aware Text Prompts are progressively integrated, we observe:
+          </p>
+          <ul>
+            <li>A significant improvement in <b>structural fidelity</b>.</li>
+            <li>Effective <b>suppression of artifacts</b> caused by SAR speckle noise.</li>
+          </ul>
+          <p>
+            Ultimately, the <b>Full Model (v)</b> produces the most <b>photorealistic results</b> with accurate color distributions and the <b>sharpest boundaries</b> compared to any other configuration.
           </p>
         </div>
       </div>
     </div>
   </div>
 </section>
-
 
 
 
