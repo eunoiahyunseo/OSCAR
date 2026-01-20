@@ -385,5 +385,9 @@ The source codes including the checkpoint can be freely used for research and ed
 This project builds upon the following works:
 - [DINOv3](https://github.com/facebookresearch/dinov3) - Vision Transformer backbone
 - [Stable Diffusion](https://github.com/Stability-AI/stablediffusion) - Diffusion model
-- [SeeSR](https://github.com/cswry/SeeSR) - Semantics-aware super-resolution
 - [ControlNet](https://github.com/lllyasviel/ControlNet) - Conditional control for diffusion models
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=eunoiahyunseo/OSCAR&type=date&legend=top-left)](https://www.star-history.com/#eunoiahyunseo/OSCAR&type=date&legend=top-left)
