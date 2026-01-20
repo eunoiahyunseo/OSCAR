@@ -45,8 +45,10 @@ This repository is the official PyTorch implementation of "OSCAR: Optical-aware 
 - **January 11, 2026:** This repository is created
 
 ## 📌 TODO
-- [ ] Optical-Aware Encoder
-- [ ] Semantic-Grounded ControlNet
+- [x] Optical-Aware Encoder
+- [x] Semantic-Grounded ControlNet
+- [ ] Dataset preprocess scripts
+- [ ] Model zoo with drive
 
 ---
 
