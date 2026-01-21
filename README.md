@@ -1,4 +1,7 @@
 <div align="center">
+
+![distill](./static/logo.png)
+
 <h2>OSCAR: Optical-aware Semantic Control for Aleatoric Refinement in Sar-to-Optical Translation</h2>
 
 <div>
