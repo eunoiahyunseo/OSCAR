@@ -1,0 +1,21 @@
+# @package _global_
+# Stage 1: SAR with Knowledge Distillation on SEN12MS
+
+defaults:
+  - /default
+
+experiment:
+  name: "stage1_sen12ms_sar_distillation"
+  stage: 1
+  output_dir: "./checkpoints/sen12ms/stage1_sar"
+
+data:
+  dataset: "sen12ms"
+  data_type: "sar"
+
+model:
+  classifier:
+    num_classes: 11
+
+distillation:
+  teacher_checkpoint: "./checkpoints/sen12ms/stage0_opt/best_model.ckpt"

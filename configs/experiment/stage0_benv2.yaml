@@ -1,0 +1,21 @@
+# @package _global_
+# Stage 0: Optical Baseline Training on BigEarthNet-v2
+
+defaults:
+  - /default
+
+experiment:
+  name: "stage0_benv2_optical_baseline"
+  stage: 0
+  output_dir: "./checkpoints/benv2/stage0_opt"
+
+data:
+  dataset: "benv2"
+  data_type: "opt"
+
+model:
+  classifier:
+    num_classes: 19
+
+distillation:
+  teacher_checkpoint: null

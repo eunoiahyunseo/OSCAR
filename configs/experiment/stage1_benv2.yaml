@@ -1,0 +1,21 @@
+# @package _global_
+# Stage 1: SAR with Knowledge Distillation on BigEarthNet-v2
+
+defaults:
+  - /default
+
+experiment:
+  name: "stage1_benv2_sar_distillation"
+  stage: 1
+  output_dir: "./checkpoints/benv2/stage1_sar"
+
+data:
+  dataset: "benv2"
+  data_type: "sar"
+
+model:
+  classifier:
+    num_classes: 19
+
+distillation:
+  teacher_checkpoint: "./checkpoints/benv2/stage0_opt/best_model.ckpt"

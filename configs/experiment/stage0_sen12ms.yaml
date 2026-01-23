@@ -1,0 +1,21 @@
+# @package _global_
+# Stage 0: Optical Baseline Training on SEN12MS
+
+defaults:
+  - /default
+
+experiment:
+  name: "stage0_sen12ms_optical_baseline"
+  stage: 0
+  output_dir: "./checkpoints/sen12ms/stage0_opt"
+
+data:
+  dataset: "sen12ms"
+  data_type: "opt"
+
+model:
+  classifier:
+    num_classes: 11
+
+distillation:
+  teacher_checkpoint: null

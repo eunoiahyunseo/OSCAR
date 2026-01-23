@@ -1,0 +1,148 @@
+# @package _global_
+# Default configuration for DINO Knowledge Distillation Training
+
+# ========================
+# EXPERIMENT SETTINGS
+# ========================
+experiment:
+  name: "dino_kd_training"
+  stage: 0  # 0: optical baseline, 1: SAR with KD
+  seed: 1004
+  output_dir: "./checkpoints"
+
+# ========================
+# MODEL CONFIGURATION
+# ========================
+model:
+  backbone:
+    name: "dinov3_vitl16"
+    repo_path: "/home/hyunseo/workspace/dinov3"
+    pretrained_weights: "/home/hyunseo/workspace/sar2opt/SAR2OPT/dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth"
+    embed_dim: 1024  # ViT-L embed dimension
+
+  classifier:
+    num_classes: 19  # BENv2: 19, SEN12MS: 11
+    layers_to_extract: [11, 14, 17, 20, 23]
+
+  lora:
+    rank: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules: ["attn.qkv", "attn.proj"]
+    bias: "none"
+
+  adapter:
+    hidden_dim_ratio: 2.0
+    num_layers: 1
+
+# ========================
+# DATA CONFIGURATION
+# ========================
+data:
+  dataset: "benv2"  # benv2 or sen12ms
+  data_type: "opt"  # opt or sar
+
+  benv2:
+    images_lmdb: "/home/hyunseo/workspace/rico-hdl/Encoded-BigEarthNet"
+    metadata_parquet: "/home/hyunseo/workspace/sar2opt/dataset/BigEarthNetv2/metadata.parquet"
+    metadata_snow_cloud_parquet: "/home/hyunseo/workspace/sar2opt/dataset/BigEarthNetv2/metadata_for_patches_with_snow_cloud_or_shadow.parquet"
+    merge_patch: true
+    img_size: [12, 120, 120]
+
+  sen12ms:
+    root_dir: "./sen12ms"
+
+  preprocessing:
+    resize_size: 256
+    norm_mean: [0.430, 0.411, 0.296]
+    norm_std: [0.213, 0.156, 0.143]
+
+  dataloader:
+    batch_size: 72
+    num_workers: 8
+    pin_memory: true
+
+# ========================
+# TRAINING CONFIGURATION
+# ========================
+training:
+  num_epochs: 100
+  gradient_accumulation_steps: 1
+
+  optimizer:
+    type: "Adam"
+    lr_base: 1.0e-4      # LoRA and head
+    lr_adapter: 1.0e-4   # Adapter modules
+    weight_decay: 0.0
+
+  scheduler:
+    type: "CosineAnnealingLR"
+    warmup_steps: 1000
+    eta_min: 1.0e-6
+
+  amp:
+    enabled: true
+    precision: "16-mixed"
+
+# ========================
+# DISTILLATION (Stage 1)
+# ========================
+distillation:
+  teacher_checkpoint: null  # Required for stage 1
+
+  loss_weights:
+    lambda_kd: 0.1
+    lambda_vicreg_inv: 35.0
+    lambda_vicreg_var: 35.0
+    lambda_vicreg_cov: 1.0
+    lambda_attn: 0.1
+    lambda_cls: 0.1
+
+  temperature: 4.0
+
+# ========================
+# LOGGING & CHECKPOINTING
+# ========================
+logging:
+  wandb:
+    project: "sar2opt-dinov3"
+    enabled: true
+    resume_id: null  # Set to previous run ID for seamless WandB resume
+
+  validation_interval_steps: 3000
+  vis_interval: 1000
+  log_every_n_steps: 1
+  log_debug_stats: true  # Log per-layer debug statistics
+
+checkpoint:
+  save_every_n_epochs: 1
+  save_top_k: 3
+  monitor: "val/APM"
+  mode: "max"
+  resume_path: null  # Path to checkpoint for resuming training
+
+# ========================
+# DEBUG OPTIONS
+# ========================
+debug:
+  overfit_batches: 0  # 0 = disabled
+  fast_dev_run: false
+  limit_train_batches: 1.0
+  limit_val_batches: 1.0
+
+# ========================
+# TRAINER (PyTorch Lightning)
+# ========================
+trainer:
+  accelerator: "gpu"
+  devices: "auto"
+  strategy: "ddp"
+  precision: ${training.amp.precision}
+  max_epochs: ${training.num_epochs}
+  accumulate_grad_batches: ${training.gradient_accumulation_steps}
+  gradient_clip_val: 1.0
+  log_every_n_steps: ${logging.log_every_n_steps}
+  val_check_interval: ${logging.validation_interval_steps}
+  enable_checkpointing: true
+  enable_progress_bar: true
+  deterministic: false
