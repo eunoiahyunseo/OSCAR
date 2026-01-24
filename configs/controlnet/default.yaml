@@ -77,9 +77,9 @@ data:
 # TRAINING CONFIGURATION
 # ========================
 training:
-  num_epochs: 1000
+  num_epochs: 10
   max_train_steps: 100000  # If set, overrides num_epochs
-  gradient_accumulation_steps: 4
+  gradient_accumulation_steps: 2
 
   # Explicitly define which modules to train
   trainable_modules: 
@@ -130,7 +130,7 @@ prompts:
 # VALIDATION CONFIGURATION
 # ========================
 validation:
-  interval_steps: 12  # Run validation every N steps (also checkpointing interval)
+  interval_steps: 1000  # Run validation every N steps (also checkpointing interval)
   num_samples: 4  # Number of validation images to generate
   max_batches: 5  # Maximum batches for validation
   inference_steps: 100  # Denoising steps during validation
