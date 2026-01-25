@@ -148,7 +148,7 @@ git clone https://github.com/facebookresearch/dinov3.git
 ## 🚀 Training Guide
 
 OSCAR training consists of two main components:
-1. **Optical-Aware SAR Encoder** - DINOv3 with knowledge distillation (`dino_final.py`)
+1. **Optical-Aware SAR Encoder** - DINOv3 with knowledge distillation (`train.py`)
 2. **Semantic-Grounded ControlNet** - Diffusion model for SAR-to-Optical translation (`train_controlnet.py`)
 
 ---
@@ -249,40 +249,51 @@ python scripts/train_controlnet.py +experiment=benv2 \
 
 ```
 OSCAR/
+├── dinov3/                             # DINOv3 repository (clone from Facebook)
+│   ├── dinov2/                         # Core DINOv3 implementation
+│   │   ├── models/                     # ViT model definitions
+│   │   ├── layers/                     # Custom layers (LoRA, attention)
+│   │   └── configs/                    # Model configurations
+│   └── hubconf.py                      # PyTorch Hub configuration
+├── rico-hdl/                           # BigEarthNet LMDB encoder (clone from rsim-tu-berlin)
+│   ├── scripts/                        # Dataset encoding scripts
+│   └── README.md                       # Usage instructions
+├── configilm/                          # ConfigILM package (local install)
+│   └── extra/DataSets/BENv2_DataSet/   # BENv2 dataset loader
 ├── scripts/
-│   ├── train.py                    # DINO KD training (Hydra)
-│   ├── train_controlnet.py         # ControlNet training (Hydra)
-│   └── test_controlnet.py          # Evaluation (Hydra)
+│   ├── train.py                        # DINO KD training (Hydra)
+│   ├── train_controlnet.py             # ControlNet training (Hydra)
+│   └── test_controlnet.py              # Evaluation (Hydra)
 ├── configs/
-│   ├── default.yaml                # DINO KD default config
+│   ├── default.yaml                    # DINO KD default config
 │   ├── experiment/
-│   │   ├── stage0_benv2.yaml       # Stage 0 optical baseline (BENv2)
-│   │   ├── stage1_benv2.yaml       # Stage 1 SAR+KD (BENv2)
-│   │   ├── stage0_sen12ms.yaml     # Stage 0 optical baseline (SEN12MS)
-│   │   └── stage1_sen12ms.yaml     # Stage 1 SAR+KD (SEN12MS)
+│   │   ├── stage0_benv2.yaml           # Stage 0 optical baseline (BENv2)
+│   │   ├── stage1_benv2.yaml           # Stage 1 SAR+KD (BENv2)
+│   │   ├── stage0_sen12ms.yaml         # Stage 0 optical baseline (SEN12MS)
+│   │   └── stage1_sen12ms.yaml         # Stage 1 SAR+KD (SEN12MS)
 │   └── controlnet/
-│       ├── default.yaml            # ControlNet default config
+│       ├── default.yaml                # ControlNet default config
 │       └── experiment/
-│           ├── benv2.yaml          # ControlNet BENv2 experiment
-│           └── sen12ms.yaml        # ControlNet SEN12MS experiment
+│           ├── benv2.yaml              # ControlNet BENv2 experiment
+│           └── sen12ms.yaml            # ControlNet SEN12MS experiment
 ├── src/
-│   ├── datamodules/                # PyTorch Lightning DataModules
-│   ├── modules/                    # PyTorch Lightning Modules
-│   ├── models/                     # Model architectures
-│   ├── losses/                     # Loss functions
-│   └── callbacks/                  # Training callbacks
+│   ├── datamodules/                    # PyTorch Lightning DataModules
+│   ├── modules/                        # PyTorch Lightning Modules
+│   ├── models/                         # Model architectures
+│   ├── losses/                         # Loss functions
+│   └── callbacks/                      # Training callbacks
 ├── models/
-│   ├── controlnet.py               # ControlNet architecture
-│   ├── unet_2d_condition.py        # UNet with image cross-attention
-│   └── unet_2d_blocks.py           # UNet building blocks
+│   ├── controlnet.py                   # ControlNet architecture
+│   ├── unet_2d_condition.py            # UNet with image cross-attention
+│   └── unet_2d_blocks.py               # UNet building blocks
 ├── pipelines/
-│   └── pipeline_seesr.py           # SeeSR inference pipeline
+│   └── pipeline_seesr.py               # SeeSR inference pipeline
 ├── utils/
-│   ├── transforms.py               # Data transforms for SAR/Optical
-│   ├── prompts.py                  # Class prompts and prompt generation
-│   ├── metrics.py                  # Image quality metrics (QNR, SAM, SCC, RMSE)
-│   └── visualization.py            # Visualization utilities
-└── stable-diffusion-2-1-base/      # Stable Diffusion weights
+│   ├── transforms.py                   # Data transforms for SAR/Optical
+│   ├── prompts.py                      # Class prompts and prompt generation
+│   ├── metrics.py                      # Image quality metrics (QNR, SAM, SCC, RMSE)
+│   └── visualization.py                # Visualization utilities
+└── stable-diffusion-2-1-base/          # Stable Diffusion weights
 ```
 
 ---
@@ -295,21 +306,21 @@ The unified `scripts/test_controlnet.py` script supports both BENv2 and SEN12MS 
 
 ```bash
 python scripts/test_controlnet.py +experiment=benv2 \
-    checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt
+    ++checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt
 ```
 
 ### SEN12MS Dataset
 
 ```bash
 python scripts/test_controlnet.py +experiment=sen12ms \
-    checkpoint.path=./checkpoints/controlnet/sen12ms/last.ckpt
+    ++checkpoint.path=./checkpoints/controlnet/sen12ms/last.ckpt
 ```
 
 ### Config Overrides for `scripts/test_controlnet.py`
 
 | Override | Description | Example |
 |----------|-------------|---------|
-| `checkpoint.path` | Path to trained ControlNet checkpoint | `checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt` |
+| `++checkpoint.path` | Path to trained ControlNet checkpoint (requires `++` prefix) | `++checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt` |
 | `validation.num_samples` | Number of samples to evaluate | `validation.num_samples=1000` |
 | `validation.batch_size` | Evaluation batch size | `validation.batch_size=32` |
 | `validation.inference_steps` | Diffusion inference steps | `validation.inference_steps=50` |
