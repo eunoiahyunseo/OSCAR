@@ -48,9 +48,10 @@ This repository is the official PyTorch implementation of "OSCAR: Optical-aware 
 - **January 11, 2026:** This repository is created
 
 ## 📌 TODO
-- [x] Optical-Aware Encoder
-- [x] Semantic-Grounded ControlNet
-- [ ] Dataset preprocess scripts
+- [x] ~~Optical-Aware Encoder~~
+- [x] ~~Semantic-Grounded ControlNet~~
+- [x] ~~Dataset preprocess scripts~~
+- [x] ~~Refactor code with Omegaconf and torchlightning~~
 - [ ] Model zoo with drive
 
 
@@ -64,20 +65,51 @@ This repository is the official PyTorch implementation of "OSCAR: Optical-aware 
 
 ## 🛠️ Installation
 
-### Requirements
-- Python >= 3.9
-- PyTorch >= 2.0
-- CUDA >= 11.8
+### Environment Setup
 
+**1. Create a virtual environment with Python 3.11:**
+```bash
+conda create -n oscar python=3.11 -y
+conda activate oscar
+```
+
+**2. Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
+**3. Install configilm (local package):**
+```bash
+pip install -e ./configilm
+```
+
+**4. Fix diffusers compatibility issue:**
+
+Navigate to the diffusers package in your environment and remove `cached_download` import:
+```bash
+cd $CONDA_PREFIX/lib/python3.11/site-packages/diffusers/utils
+sed -i 's/from huggingface_hub import cached_download, /from huggingface_hub import /' dynamic_modules_utils.py
+```
+
+### Requirements
+- Python 3.11
+- PyTorch >= 2.0
+- CUDA >= 11.8
+- PyTorch Lightning >= 2.5.5
+- OmegaConf >= 2.3.0
+
 ### Pre-trained Models
+
+**1. Clone DINOv3 repository:**
+```bash
+git clone https://github.com/facebookresearch/dinov3.git
+```
+
+**2. Download pre-trained checkpoints:**
 
 | Model | Description | Download |
 |-------|-------------|----------|
-| DINOv3 ViT-L/16 | Pretrained backbone (SAT-493M) | [Download](https://drive.google.com/...) |
+| DINOv3 ViT-L/16 | Pretrained backbone (SAT-493M) | [dinov3-sat](https://github.com/facebookresearch/dinov3) |
 | Stable Diffusion 2.1 | Base diffusion model | [HuggingFace](https://huggingface.co/stabilityai/stable-diffusion-2-1-base) |
 
 ---
@@ -88,6 +120,28 @@ pip install -r requirements.txt
 |---------|---------|-------------|
 | **BENv2** (BigEarthNet v2) | 19 | Multi-label land cover classification with Sentinel-1/2 imagery |
 | **SEN12MS** | 11 | Multi-temporal Sentinel-1/2 dataset with LCCS land use labels |
+
+### BENv2 (BigEarthNet v2) Installation
+
+1. Download BigEarthNet v2 (S1 + S2) from the official website:
+   - https://bigearth.net/
+
+2. Clone and use [rico-hdl](https://github.com/rsim-tu-berlin/rico-hdl) to encode the dataset into LMDB format:
+   ```bash
+   git clone https://github.com/rsim-tu-berlin/rico-hdl.git
+   cd rico-hdl
+   # Follow rico-hdl instructions to encode BigEarthNet v2
+   ```
+
+### SEN12MS Installation
+
+1. Follow the official instructions to download the dataset:
+   - https://github.com/schmitt-muc/SEN12MS
+
+2. Create subset for training:
+   ```bash
+   python ./tools/sen12ms_make_subset.py
+   ```
 
 ---
 
@@ -113,38 +167,14 @@ The Optical-Aware SAR Encoder uses a 2-stage training process with DINOv3 and Lo
 #### Stage 0: Optical Baseline (Teacher)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 dino_final.py \
-    --dataset benv2 \
-    --stage 0 \
-    --data_type opt \
-    --output_dir ./checkpoints/benv2/stage0_opt \
-    --dinov3_repo /path/to/dinov3 \
-    --dinov3_pretrained_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --dataset_images_lmdb /path/to/Encoded-BigEarthNet \
-    --dataset_metadata_parquet /path/to/metadata.parquet \
-    --dataset_metadata_snow_cloud_parquet /path/to/metadata_for_patches_with_snow_cloud_or_shadow.parquet \
-    --batch_size 72 \
-    --num_epochs 100 \
-    --learning_rate_base 1e-4
+python scripts/train.py +experiment=stage0_benv2
 ```
 
 #### Stage 1: SAR with Knowledge Distillation (Student)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 dino_final.py \
-    --dataset benv2 \
-    --stage 1 \
-    --data_type sar \
-    --teacher_checkpoint ./checkpoints/benv2/stage0_opt/checkpoint_stage0_epoch100.pth \
-    --output_dir ./checkpoints/benv2/stage1_sar \
-    --dinov3_repo /path/to/dinov3 \
-    --dinov3_pretrained_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --dataset_images_lmdb /path/to/Encoded-BigEarthNet \
-    --dataset_metadata_parquet /path/to/metadata.parquet \
-    --dataset_metadata_snow_cloud_parquet /path/to/metadata_for_patches_with_snow_cloud_or_shadow.parquet \
-    --batch_size 72 \
-    --num_epochs 100 \
-    --learning_rate_base 1e-4
+python scripts/train.py +experiment=stage1_benv2 \
+    distillation.teacher_checkpoint=./checkpoints/benv2/stage0_opt/last.ckpt
 ```
 
 ### SEN12MS Dataset
@@ -152,48 +182,27 @@ CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 dino_final.py \
 #### Stage 0: Optical Baseline (Teacher)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 dino_final.py \
-    --dataset sen12ms \
-    --stage 0 \
-    --data_type opt \
-    --sen12ms_root_dir ./sen12ms \
-    --output_dir ./checkpoints/sen12ms/stage0_opt \
-    --dinov3_repo /path/to/dinov3 \
-    --dinov3_pretrained_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --batch_size 72 \
-    --num_epochs 100
+python scripts/train.py +experiment=stage0_sen12ms
 ```
 
 #### Stage 1: SAR with Knowledge Distillation (Student)
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" torchrun --nproc_per_node=2 dino_final.py \
-    --dataset sen12ms \
-    --stage 1 \
-    --data_type sar \
-    --teacher_checkpoint ./checkpoints/sen12ms/stage0_opt/checkpoint_stage0_epoch100.pth \
-    --output_dir ./checkpoints/sen12ms/stage1_sar \
-    --sen12ms_root_dir ./sen12ms \
-    --dinov3_repo /path/to/dinov3 \
-    --dinov3_pretrained_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --batch_size 72 \
-    --num_epochs 100
+python scripts/train.py +experiment=stage1_sen12ms \
+    distillation.teacher_checkpoint=./checkpoints/sen12ms/stage0_opt/last.ckpt
 ```
 
-### Key Arguments for `dino_final.py`
+### Config Overrides for `scripts/train.py`
 
-| Argument | Description | Default |
+| Override | Description | Example |
 |----------|-------------|---------|
-| `--dataset` | Dataset to use: `benv2` or `sen12ms` | `benv2` |
-| `--stage` | Training stage: `0` (optical) or `1` (SAR distillation) | Required |
-| `--data_type` | Data type: `opt` (optical) or `sar` | Required |
-| `--teacher_checkpoint` | Path to teacher checkpoint (required for stage 1) | None |
-| `--batch_size` | Batch size per GPU | 72 |
-| `--num_epochs` | Number of training epochs | 100 |
-| `--learning_rate_base` | Learning rate for LoRA and classifier | 1e-4 |
-| `--lora_rank` | LoRA rank | 8 |
-| `--lora_alpha` | LoRA alpha | 16 |
-| `--layers_to_distill` | ViT layers for feature extraction | [11,14,17,20,23] |
+| `training.num_epochs` | Number of training epochs | `training.num_epochs=200` |
+| `training.optimizer.lr_base` | Learning rate for LoRA and classifier | `training.optimizer.lr_base=5e-5` |
+| `training.batch_size` | Batch size per GPU | `training.batch_size=64` |
+| `trainer.devices` | Number of GPUs | `trainer.devices=4` |
+| `model.lora.rank` | LoRA rank | `model.lora.rank=16` |
+| `model.lora.alpha` | LoRA alpha | `model.lora.alpha=32` |
+| `debug.fast_dev_run` | Quick debug run | `debug.fast_dev_run=true` |
 
 ---
 
@@ -204,86 +213,34 @@ The Semantic-Grounded ControlNet uses Stable Diffusion 2.1 with ControlNet for S
 ### BENv2 Dataset
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch train_seesr.py \
-    --dataset benv2 \
-    --pretrained_model_name_or_path "./stable-diffusion-2-1-base/stable-diffusion-2-1-base" \
-    --output_dir "./checkpoints/benv2/controlnet" \
-    --dino_checkpoint "./checkpoints/benv2/stage1_sar/checkpoint_stage1_epoch100.pth" \
-    --dino_repo_path /path/to/dinov3 \
-    --dino_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --images_lmdb /path/to/Encoded-BigEarthNet \
-    --metadata_parquet /path/to/metadata.parquet \
-    --metadata_snow_cloud_parquet /path/to/metadata_for_patches_with_snow_cloud_or_shadow.parquet \
-    --mixed_precision "bf16" \
-    --resolution 256 \
-    --learning_rate 5e-5 \
-    --train_batch_size 8 \
-    --gradient_accumulation_steps 4 \
-    --checkpointing_steps 1000 \
-    --max_train_steps 100000 \
-    --report_to wandb \
-    --lr_scheduler "cosine" \
-    --lr_warmup_steps 100 \
-    --gradient_checkpointing \
-    --use_8bit_adam \
-    --set_grads_to_none \
-    --enable_xformers_memory_efficient_attention \
-    --trainable_modules "image_attentions" "conv_out_conf"
+python scripts/train_controlnet.py +experiment=benv2
 ```
 
 ### SEN12MS Dataset
 
 ```bash
-CUDA_VISIBLE_DEVICES="0,1" accelerate launch train_seesr.py \
-    --dataset sen12ms \
-    --sen12ms_root "./sen12ms" \
-    --sen12ms_dino_checkpoint "./checkpoints/sen12ms/stage1_sar/checkpoint_stage1_epoch100.pth" \
-    --pretrained_model_name_or_path "./stable-diffusion-2-1-base/stable-diffusion-2-1-base" \
-    --output_dir "./checkpoints/sen12ms/controlnet" \
-    --dino_repo_path /path/to/dinov3 \
-    --dino_weights ./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth \
-    --mixed_precision "bf16" \
-    --resolution 256 \
-    --learning_rate 5e-5 \
-    --train_batch_size 8 \
-    --gradient_accumulation_steps 4 \
-    --checkpointing_steps 1000 \
-    --max_train_steps 100000 \
-    --report_to wandb \
-    --lr_scheduler "cosine" \
-    --lr_warmup_steps 100 \
-    --gradient_checkpointing \
-    --use_8bit_adam \
-    --set_grads_to_none \
-    --enable_xformers_memory_efficient_attention \
-    --trainable_modules "image_attentions" "conv_out_conf"
+python scripts/train_controlnet.py +experiment=sen12ms
 ```
 
-### Key Arguments for `train_seesr.py`
+### Config Overrides for `scripts/train_controlnet.py`
 
-| Argument | Description | Default |
+| Override | Description | Example |
 |----------|-------------|---------|
-| `--dataset` | Dataset to use: `benv2` or `sen12ms` | `benv2` |
-| `--pretrained_model_name_or_path` | Path to Stable Diffusion 2.1 base | Required |
-| `--output_dir` | Output directory for checkpoints | Required |
-| `--dino_checkpoint` | Path to DINOv3 SAR encoder checkpoint (BENv2) | Required |
-| `--sen12ms_dino_checkpoint` | Path to DINOv3 SAR encoder checkpoint (SEN12MS) | Required for SEN12MS |
-| `--sen12ms_root` | Root directory for SEN12MS dataset | `./sen12ms` |
-| `--train_batch_size` | Batch size per GPU | 8 |
-| `--gradient_accumulation_steps` | Gradient accumulation steps | 4 |
-| `--learning_rate` | Learning rate | 5e-5 |
-| `--max_train_steps` | Maximum training steps | 100000 |
-| `--trainable_modules` | Modules to train | `["image_attentions", "conv_out_conf"]` |
-| `--mixed_precision` | Mixed precision training: `no`, `fp16`, `bf16` | `bf16` |
+| `training.optimizer.lr` | Learning rate | `training.optimizer.lr=1e-5` |
+| `training.batch_size` | Batch size per GPU | `training.batch_size=16` |
+| `training.gradient_accumulation_steps` | Gradient accumulation steps | `training.gradient_accumulation_steps=8` |
+| `training.max_train_steps` | Maximum training steps | `training.max_train_steps=200000` |
+| `trainer.devices` | Number of GPUs | `trainer.devices=4` |
+| `trainer.precision` | Mixed precision: `32`, `16-mixed`, `bf16-mixed` | `trainer.precision=bf16-mixed` |
+| `debug.fast_dev_run` | Quick debug run | `debug.fast_dev_run=true` |
 
 ### Resume Training
 
 To resume from a checkpoint:
 
 ```bash
-accelerate launch train_seesr.py \
-    --resume_from_checkpoint "./checkpoints/benv2/controlnet/checkpoint-50000" \
-    ... # other arguments
+python scripts/train_controlnet.py +experiment=benv2 \
+    checkpoint.resume_path=./checkpoints/controlnet/benv2/last.ckpt
 ```
 
 ---
@@ -292,106 +249,72 @@ accelerate launch train_seesr.py \
 
 ```
 OSCAR/
-├── dino_final.py              # Optical-Aware SAR Encoder training
-├── train_seesr.py             # Semantic-Grounded ControlNet training
-├── test_seesr.py              # Unified evaluation script (BENv2/SEN12MS)
-├── sen12ms_dataloader.py      # SEN12MS dataset loader
-├── models/
-│   ├── controlnet.py          # ControlNet architecture
-│   ├── unet_2d_condition.py   # UNet with image cross-attention
-│   └── unet_2d_blocks.py      # UNet building blocks
-├── pipelines/
-│   └── pipeline_seesr.py      # SeeSR inference pipeline
-├── utils/
-│   ├── transforms.py          # Data transforms for SAR/Optical
-│   ├── prompts.py             # Class prompts and prompt generation
-│   ├── dataloaders.py         # Dataset utilities
-│   ├── models.py              # Model utilities
-│   ├── metrics.py             # Image quality metrics (QNR, SAM, SCC, RMSE)
-│   ├── pipeline.py            # Pipeline utilities
-│   ├── validation.py          # Validation utilities
-│   └── wavelet_color_fix.py   # Post-processing color correction
 ├── scripts/
-│   ├── benv2/
-│   │   ├── dino_stage_0.sh    # BENv2 optical encoder training
-│   │   ├── dino_stage_1.sh    # BENv2 SAR encoder training
-│   │   └── train_controlnet.sh # BENv2 ControlNet training
-│   └── sen12ms/
-│       ├── dino_stage_0.sh    # SEN12MS optical encoder training
-│       ├── dino_stage1.sh     # SEN12MS SAR encoder training
-│       └── train_controlnet.sh # SEN12MS ControlNet training
-└── stable-diffusion-2-1-base/ # Stable Diffusion weights
+│   ├── train.py                    # DINO KD training (Hydra)
+│   ├── train_controlnet.py         # ControlNet training (Hydra)
+│   └── test_controlnet.py          # Evaluation (Hydra)
+├── configs/
+│   ├── default.yaml                # DINO KD default config
+│   ├── experiment/
+│   │   ├── stage0_benv2.yaml       # Stage 0 optical baseline (BENv2)
+│   │   ├── stage1_benv2.yaml       # Stage 1 SAR+KD (BENv2)
+│   │   ├── stage0_sen12ms.yaml     # Stage 0 optical baseline (SEN12MS)
+│   │   └── stage1_sen12ms.yaml     # Stage 1 SAR+KD (SEN12MS)
+│   └── controlnet/
+│       ├── default.yaml            # ControlNet default config
+│       └── experiment/
+│           ├── benv2.yaml          # ControlNet BENv2 experiment
+│           └── sen12ms.yaml        # ControlNet SEN12MS experiment
+├── src/
+│   ├── datamodules/                # PyTorch Lightning DataModules
+│   ├── modules/                    # PyTorch Lightning Modules
+│   ├── models/                     # Model architectures
+│   ├── losses/                     # Loss functions
+│   └── callbacks/                  # Training callbacks
+├── models/
+│   ├── controlnet.py               # ControlNet architecture
+│   ├── unet_2d_condition.py        # UNet with image cross-attention
+│   └── unet_2d_blocks.py           # UNet building blocks
+├── pipelines/
+│   └── pipeline_seesr.py           # SeeSR inference pipeline
+├── utils/
+│   ├── transforms.py               # Data transforms for SAR/Optical
+│   ├── prompts.py                  # Class prompts and prompt generation
+│   ├── metrics.py                  # Image quality metrics (QNR, SAM, SCC, RMSE)
+│   └── visualization.py            # Visualization utilities
+└── stable-diffusion-2-1-base/      # Stable Diffusion weights
 ```
 
 ---
 
 ## 🔬 Evaluation
 
-The unified `test_seesr.py` script supports both BENv2 and SEN12MS datasets through the `--dataset` argument.
+The unified `scripts/test_controlnet.py` script supports both BENv2 and SEN12MS datasets.
 
 ### BENv2 Dataset
 
 ```bash
-python test_seesr.py \
-    --dataset benv2 \
-    --checkpoint_dir "./checkpoints/benv2/controlnet/checkpoint-100000" \
-    --base_model_path "./stable-diffusion-2-1-base/stable-diffusion-2-1-base" \
-    --dino_weights "./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth" \
-    --dino_checkpoint "./checkpoints/benv2/stage1_sar/checkpoint_stage1_epoch100.pth" \
-    --images_lmdb /path/to/Encoded-BigEarthNet \
-    --metadata_parquet /path/to/metadata.parquet \
-    --metadata_snow_cloud_parquet /path/to/metadata_for_patches_with_snow_cloud_or_shadow.parquet \
-    --output_dir "./validation_results/benv2" \
-    --num_samples 1000 \
-    --num_inference_steps 50 \
-    --guidance_scale 5.5
+python scripts/test_controlnet.py +experiment=benv2 \
+    checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt
 ```
 
 ### SEN12MS Dataset
 
 ```bash
-python test_seesr.py \
-    --dataset sen12ms \
-    --sen12ms_root "./sen12ms" \
-    --checkpoint_dir "./checkpoints/sen12ms/controlnet/checkpoint-100000" \
-    --base_model_path "./stable-diffusion-2-1-base/stable-diffusion-2-1-base" \
-    --dino_weights "./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth" \
-    --dino_checkpoint "./checkpoints/sen12ms/stage1_sar/checkpoint_stage1_epoch100.pth" \
-    --output_dir "./validation_results/sen12ms" \
-    --num_samples 3000 \
-    --num_inference_steps 50 \
-    --guidance_scale 5.5
+python scripts/test_controlnet.py +experiment=sen12ms \
+    checkpoint.path=./checkpoints/controlnet/sen12ms/last.ckpt
 ```
 
-### Evaluate External Generated Images
+### Config Overrides for `scripts/test_controlnet.py`
 
-Skip image generation and evaluate pre-generated images:
-
-```bash
-python test_seesr.py \
-    --dataset benv2 \
-    --external_folder "./external_generated_images" \
-    --dino_weights "./dinov3_vitl16_pretrain_sat493m-eadcf0ff.pth" \
-    --dino_checkpoint "./checkpoints/benv2/stage1_sar/checkpoint_stage1_epoch100.pth" \
-    --output_dir "./validation_results/external"
-```
-
-### Key Arguments for `test_seesr.py`
-
-| Argument | Description | Default |
+| Override | Description | Example |
 |----------|-------------|---------|
-| `--dataset` | Dataset to use: `benv2` or `sen12ms` | `benv2` |
-| `--checkpoint_dir` | Path to trained ControlNet checkpoint | Required |
-| `--base_model_path` | Path to Stable Diffusion 2.1 base | Required |
-| `--dino_weights` | Path to DINOv3 pretrained weights | Required |
-| `--dino_checkpoint` | Path to DINOv3 classifier checkpoint | Required |
-| `--output_dir` | Output directory for results | `./validation_results` |
-| `--num_samples` | Number of samples to evaluate | 1000 |
-| `--batch_size` | Evaluation batch size | 20 |
-| `--external_folder` | Path to external generated images (skip generation) | None |
-| `--num_inference_steps` | Diffusion inference steps | 50 |
-| `--guidance_scale` | Classifier-free guidance scale | 5.5 |
-| `--mixed_precision` | Mixed precision mode: `no`, `fp16`, `bf16` | `bf16` |
+| `checkpoint.path` | Path to trained ControlNet checkpoint | `checkpoint.path=./checkpoints/controlnet/benv2/last.ckpt` |
+| `validation.num_samples` | Number of samples to evaluate | `validation.num_samples=1000` |
+| `validation.batch_size` | Evaluation batch size | `validation.batch_size=32` |
+| `validation.inference_steps` | Diffusion inference steps | `validation.inference_steps=50` |
+| `validation.guidance_scale` | Classifier-free guidance scale | `validation.guidance_scale=7.5` |
+| `output_dir` | Output directory for results | `output_dir=./validation_results/benv2` |
 
 ### Evaluation Metrics
 
@@ -444,7 +367,7 @@ The source codes including the checkpoint can be freely used for research and ed
 
 ## 🙏 Acknowledgements
 
-This project builds upon the following works:
+This project builds upon the following works:`
 - [DINOv3](https://github.com/facebookresearch/dinov3) - Vision Transformer backbone
 - [Stable Diffusion](https://github.com/Stability-AI/stablediffusion) - Diffusion model
 - [ControlNet](https://github.com/lllyasviel/ControlNet) - Conditional control for diffusion models
